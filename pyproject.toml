@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iac-threatgen"
+version = "0.1.0"
+description = "Agentic threat-model generator from IaC: STRIDE + MITRE ATT&CK + NIST CSF, with secure-by-default Terraform PRs."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "IaC ThreatGen capstone" }]
+keywords = ["threat-modeling", "STRIDE", "MITRE-ATTACK", "terraform", "kubernetes", "langgraph", "nvidia-nim", "llama"]
+
+# Runtime deps are tracked in requirements.txt (pinned, phase-by-phase) to keep the
+# resolver conflict-free. pyproject stays metadata + tooling only until Phase 3.
+
+[project.scripts]
+iac-threatgen = "iac_threatgen.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "ruff==0.14.4",
+  "pytest==8.4.2",
+  "pytest-cov==7.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+iac_threatgen = ["data/*.json", "schemas/*.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]   # incl. flake8-bandit (S) — security lint, fitting for the domain
+ignore = ["S101"]                           # allow assert
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use intentional fake secrets (S105/S106) and long inline fixture literals (E501).
+"tests/**" = ["S105", "S106", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m venv .venv)",
+      "Bash(./.venv/Scripts/python.exe -m pip install --upgrade pip -q)",
+      "Bash(./.venv/Scripts/python.exe -m pip install -r requirements.txt -q)",
+      "Bash(./.venv/Scripts/python.exe -m pip install -e . -q)",
+      "Bash(./.venv/Scripts/python.exe -m pip show anthropic python-dotenv)",
+      "Bash(./.venv/Scripts/python.exe scripts/check_env.py)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(pip index *)",
+      "Bash(.venv/Scripts/python.exe -m pip uninstall -y anthropic)",
+      "Bash(.venv/Scripts/python.exe -m pip install -r requirements.txt)",
+      "Bash(.venv/Scripts/python.exe scripts/check_env.py)",
+      "Bash(.venv/Scripts/python.exe -m iac_threatgen.cli scan tests/fixtures/sample_stack -o examples/sample_report.json --markdown examples/sample_report.md)"
+    ]
+  }
+}

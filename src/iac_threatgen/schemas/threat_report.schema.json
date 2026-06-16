@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iac-threatgen/schemas/threat_report.schema.json",
+  "title": "Threat Report",
+  "description": "Canonical final output of the IaC ThreatGen pipeline: STRIDE threats grounded in resources, mapped to MITRE ATT&CK, with NIST CSF mitigations and a Mermaid DFD. Frozen in Phase 2 (FR-9).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "model", "input_summary", "dfd_mermaid", "threats"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model id used, e.g. 'meta/llama-3.3-70b-instruct'."
+    },
+    "input_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource_count", "files"],
+      "properties": {
+        "resource_count": { "type": "integer", "minimum": 0 },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "skipped_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "dfd_mermaid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Mermaid flowchart source for the data-flow diagram (G5/FR-8)."
+    },
+    "threats": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/threat" }
+    },
+    "remediation_pr": {
+      "type": ["object", "null"],
+      "description": "Populated from Phase 4 by the PR agent; null until then.",
+      "additionalProperties": false,
+      "properties": {
+        "branch": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "files_changed": { "type": "array", "items": { "type": "string" } },
+        "terraform_validate_passed": { "type": "boolean" }
+      }
+    },
+    "usage": {
+      "type": ["object", "null"],
+      "description": "Token accounting for the cost guardrail (NFR-4).",
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": { "type": "integer", "minimum": 0 },
+        "output_tokens": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "threat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "stride", "title", "description", "resource_id", "severity", "attack", "mitigations"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^TH-[0-9]{3,}$",
+          "description": "Stable threat id, e.g. 'TH-001'."
+        },
+        "stride": {
+          "type": "string",
+          "enum": [
+            "Spoofing",
+            "Tampering",
+            "Repudiation",
+            "InformationDisclosure",
+            "DenialOfService",
+            "ElevationOfPrivilege"
+          ]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "resource_id": {
+          "type": "string",
+          "description": "MUST match a resource id in the resource graph (grounding, FR-5)."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "attack": {
+          "type": "array",
+          "minItems": 1,
+          "description": "MITRE ATT&CK techniques (G3/FR-6); IDs validated against the corpus (FR-17).",
+          "items": { "$ref": "#/$defs/attack_technique" }
+        },
+        "mitigations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/mitigation" }
+        }
+      }
+    },
+    "attack_technique": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["technique_id", "technique_name"],
+      "properties": {
+        "technique_id": {
+          "type": "string",
+          "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$",
+          "description": "ATT&CK technique or sub-technique id, e.g. 'T1190' or 'T1078.004'."
+        },
+        "technique_name": { "type": "string", "minLength": 1 },
+        "tactic": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "mitigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["csf_function", "recommendation"],
+      "properties": {
+        "csf_function": {
+          "type": "string",
+          "enum": ["GV", "ID", "PR", "DE", "RS", "RC"],
+          "description": "NIST CSF 2.0 function: Govern, Identify, Protect, Detect, Respond, Recover."
+        },
+        "csf_subcategory": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}\\.[A-Z]{2}-[0-9]{1,2}$",
+          "description": "e.g. 'PR.AC-4'. Validated against a controlled CSF list (FR-7/FR-17)."
+        },
+        "recommendation": { "type": "string", "minLength": 1 },
+        "terraform_hint": {
+          "type": "string",
+          "description": "Optional secure-by-default HCL snippet seed for the remediation agent (G6)."
+        }
+      }
+    }
+  }
+}

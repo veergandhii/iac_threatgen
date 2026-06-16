@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iac-threatgen/schemas/resource_graph.schema.json",
+  "title": "Resource Graph",
+  "description": "Normalized output of the IaC parser (Terraform + Kubernetes), consumed by the STRIDE/ATT&CK/CSF mapper nodes. Frozen in Phase 2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "resources"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "files"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["terraform", "kubernetes", "mixed"]
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Relative paths of the IaC files that were parsed."
+        },
+        "skipped": {
+          "type": "array",
+          "description": "Files skipped (unparseable / too large / unknown) — graceful degradation (FR-4).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "reason"],
+            "properties": {
+              "path": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resource" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "provider", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable unique id, e.g. 'aws_s3_bucket.data' (TF) or 'apps/v1/Deployment/web' (K8s)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type, e.g. 'aws_s3_bucket' or the K8s apiVersion+kind."
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["terraform", "kubernetes"]
+        },
+        "name": { "type": "string" },
+        "kind": {
+          "type": ["string", "null"],
+          "description": "Kubernetes kind (Deployment, Service, ...). Null for Terraform."
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Normalized security-relevant attributes (free-form, parser-defined).",
+          "additionalProperties": true
+        },
+        "exposure": {
+          "type": "string",
+          "enum": ["public", "private", "unknown"],
+          "default": "unknown"
+        },
+        "source_file": { "type": "string" },
+        "source_lines": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 1,
+          "maxItems": 2,
+          "description": "[start] or [start, end] line numbers in source_file."
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "relation"],
+      "properties": {
+        "from": { "type": "string", "description": "Source resource id." },
+        "to": { "type": "string", "description": "Target resource id." },
+        "relation": {
+          "type": "string",
+          "enum": ["routes_to", "references", "depends_on", "mounts", "exposes", "grants"]
+        }
+      }
+    }
+  }
+}

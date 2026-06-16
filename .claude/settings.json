@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -m pytest -q --cov=iac_threatgen --cov-report=term-missing)",
+      "Bash(mkdir -p src/iac_threatgen/data src/iac_threatgen/schemas)",
+      "Bash(mv data/attack_cloud_corpus.json data/nist_csf_subcategories.json src/iac_threatgen/data/)",
+      "Bash(mv schemas/resource_graph.schema.json schemas/threat_report.schema.json src/iac_threatgen/schemas/)",
+      "Bash(rmdir data *)",
+      "Bash(.venv/Scripts/python.exe -m pip install -e . --quiet)",
+      "Bash(.venv/Scripts/python.exe -m pytest -q)",
+      "Bash(rm -rf /tmp/wheels)",
+      "Bash(.venv/Scripts/python.exe -m pip wheel . --no-deps -w /tmp/wheels)",
+      "Bash(.venv/Scripts/python.exe -c \"import zipfile,glob; w=glob.glob\\('/tmp/wheels/iac_threatgen*.whl'\\)[0]; print\\(w.split\\('/'\\)[-1]\\); [print\\(' ',n\\) for n in zipfile.ZipFile\\(w\\).namelist\\(\\) if n.endswith\\('.json'\\)]\")"
+    ]
+  }
+}

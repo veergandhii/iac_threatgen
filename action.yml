@@ -1,0 +1,74 @@
+name: "IaC ThreatGen"
+description: "Generate a STRIDE / MITRE ATT&CK / NIST CSF threat model from Terraform & Kubernetes IaC, with an optional secure-by-default Terraform PR."
+author: "IaC ThreatGen capstone"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  path:
+    description: "File or directory containing Terraform/Kubernetes IaC."
+    required: false
+    default: "."
+  remediate:
+    description: "Generate secure-by-default Terraform remediations (requires terraform)."
+    required: false
+    default: "false"
+  open-pr:
+    description: "Open a GitHub PR with the remediation (needs contents+pull-requests write)."
+    required: false
+    default: "false"
+  output:
+    description: "Path for the JSON report."
+    required: false
+    default: "threat_report.json"
+  markdown:
+    description: "Path for the Markdown report."
+    required: false
+    default: "threat_report.md"
+  python-version:
+    description: "Python version to run on."
+    required: false
+    default: "3.13"
+
+outputs:
+  report-path:
+    description: "Path to the JSON report."
+    value: ${{ steps.scan.outputs.report-path }}
+  threat-count:
+    description: "Number of threats found."
+    value: ${{ steps.scan.outputs.threat-count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install IaC ThreatGen
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Set up Terraform (for remediation validate)
+      if: ${{ inputs.remediate == 'true' }}
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        # Provided by the calling workflow (from secrets). Never hard-coded here.
+        NVIDIA_API_KEY: ${{ env.NVIDIA_API_KEY }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        args=(scan "${{ inputs.path }}" -o "${{ inputs.output }}" --markdown "${{ inputs.markdown }}")
+        [ "${{ inputs.remediate }}" = "true" ] && args+=(--remediate)
+        [ "${{ inputs.open-pr }}" = "true" ] && args+=(--open-pr)
+        iac-threatgen "${args[@]}"
+        echo "report-path=${{ inputs.output }}" >> "$GITHUB_OUTPUT"
+        count=$(python -c "import json,sys;print(len(json.load(open('${{ inputs.output }}'))['threats']))")
+        echo "threat-count=${count}" >> "$GITHUB_OUTPUT"

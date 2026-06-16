@@ -1,0 +1,27 @@
+# =====================================================================
+# Pinned dependency baseline. Deps are introduced ONE PHASE AT A TIME
+# to keep the resolver conflict-free (see docs/risk-register.md R-01).
+#
+# The FULL set below was resolved + installed together + import-checked on
+# Python 3.13.9 / pip 25.2 on 2026-06-16 (Phase 3 R-01 checkpoint).
+# `pip check` reported no broken requirements.
+# Exact transitive tree is locked in requirements.lock.txt (pip freeze).
+# Regenerate the lock with:  pip freeze > requirements.lock.txt
+# =====================================================================
+
+# --- Phase 1: LLM backend baseline ---
+# NVIDIA Developer API (NIM) is OpenAI-compatible, so we use the official
+# OpenAI SDK pointed at https://integrate.api.nvidia.com/v1
+openai==2.41.1              # OpenAI SDK; client for NVIDIA's OpenAI-compatible API (also provides httpx)
+python-dotenv==1.2.2        # load secrets from .env in local dev
+
+# --- Phase 3/4: pipeline, parsing, RAG (installed at Phase 4 start) ---
+langgraph==1.2.5            # multi-agent orchestration (pulls langchain-core==1.4.7, pydantic v2)
+python-hcl2==8.1.2          # Terraform HCL parsing
+pyyaml==6.0.3               # Kubernetes YAML parsing
+pydantic==2.13.4            # typed LangGraph state + model-output validation
+jsonschema==4.26.0          # validate output against schemas/ (FR-9)
+rank-bm25==0.2.2            # lexical RAG over the ATT&CK corpus (R-02: BM25, no torch)
+
+# httpx (transitive via openai) is reused for the GitHub PR client — no extra top-level dep.
+# Dev tooling (ruff, pytest) lives in pyproject.toml [project.optional-dependencies].

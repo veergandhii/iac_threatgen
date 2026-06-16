@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-16T14:46:59.745211+00:00",
+  "model": "meta/llama-3.3-70b-instruct",
+  "input_summary": {
+    "resource_count": 6,
+    "files": [
+      "tests\\fixtures\\sample_stack\\k8s.yaml",
+      "tests\\fixtures\\sample_stack\\main.tf"
+    ],
+    "skipped_count": 0
+  },
+  "dfd_mermaid": "flowchart LR\n    internet([Internet]):::ext\n    n0[\"api<br/>apps/v1/Deployment\"]\n    internet --> n0\n    n1[\"api-lb<br/>v1/Service\"]\n    internet --> n1\n    n2[\"data<br/>aws_s3_bucket\"]\n    internet --> n2\n    n3[\"web<br/>aws_security_group\"]\n    internet --> n3\n    n4[\"app<br/>aws_instance\"]\n    internet --> n4\n    n5[\"main<br/>aws_db_instance\"]\n    internet --> n5\n    n1 -->|exposes| n0\n    n4 -->|references| n3\n    classDef ext fill:#eef,stroke:#557;\n    classDef public fill:#fee,stroke:#a33,stroke-width:2px;\n    class n0,n1,n2,n3,n4,n5 public;",
+  "threats": [
+    {
+      "id": "TH-001",
+      "stride": "ElevationOfPrivilege",
+      "title": "Privilege Escalation in Deployment",
+      "description": "The 'api' deployment has privileged set to true and allowPrivilegeEscalation set to true, which could allow an attacker to escalate privileges.",
+      "resource_id": "apps/v1/Deployment/api",
+      "severity": "high",
+      "attack": [
+        {
+          "technique_id": "T1611",
+          "technique_name": "Escape to Host",
+          "tactic": "Privilege Escalation",
+          "url": "https://attack.mitre.org/techniques/T1611/"
+        }
+      ],
+      "mitigations": [
+        {
+          "csf_function": "PR",
+          "csf_subcategory": "PR.AA-01",
+          "recommendation": "Set privileged and allowPrivilegeEscalation to false",
+          "terraform_hint": "Update the 'api' deployment to set privileged and allowPrivilegeEscalation to false"
+        }
+      ]
+    },
+    {
+      "id": "TH-002",
+      "stride": "InformationDisclosure",
+      "title": "Publicly Accessible S3 Bucket",
+      "description": "The 'data' S3 bucket has a public-read ACL, which could allow an attacker to access sensitive data.",
+      "resource_id": "aws_s3_bucket.data",
+      "severity": "medium",
+      "attack": [
+        {
+          "technique_id": "T1530",
+          "technique_name": "Data from Cloud Storage",
+          "tactic": "Collection",
+          "url": "https://attack.mitre.org/techniques/T1530/"
+        }
+      ],
+      "mitigations": [
+        {
+          "csf_function": "PR",
+          "csf_subcategory": "PR.DS-01",
+          "recommendation": "Update the ACL to restrict access to authorized users",
+          "terraform_hint": "Update the 'data' S3 bucket to set the ACL to private"
+        }
+      ]
+    },
+    {
+      "id": "TH-003",
+      "stride": "DenialOfService",
+      "title": "Unrestricted Security Group",
+      "description": "The 'web' security group has an ingress rule that allows traffic from 0.0.0.0/0, which could allow an attacker to launch a denial-of-service attack.",
+      "resource_id": "aws_security_group.web",
+      "severity": "high",
+      "attack": [
+        {
+          "technique_id": "T1499",
+          "technique_name": "Endpoint Denial of Service",
+          "tactic": "Impact",
+          "url": "https://attack.mitre.org/techniques/T1499/"
+        }
+      ],
+      "mitigations": [
+        {
+          "csf_function": "PR",
+          "csf_subcategory": "PR.AT-01",
+          "recommendation": "Restrict the ingress rule to only allow traffic from authorized IP addresses",
+          "terraform_hint": "Update the 'web' security group to restrict the ingress rule"
+        }
+      ]
+    },
+    {
+      "id": "TH-004",
+      "stride": "ElevationOfPrivilege",
+      "title": "Unsecured Instance Metadata",
+      "description": "The 'app' instance has unsecured credentials, which could allow an attacker to escalate privileges.",
+      "resource_id": "aws_instance.app",
+      "severity": "high",
+      "attack": [
+        {
+          "technique_id": "T1552.005",
+          "technique_name": "Unsecured Credentials: Cloud Instance Metadata API",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1552/005/"
+        }
+      ],
+      "mitigations": [
+        {
+          "csf_function": "PR",
+          "csf_subcategory": "PR.IR-01",
+          "recommendation": "Secure the instance metadata",
+          "terraform_hint": "Update the 'app' instance to secure the instance metadata"
+        }
+      ]
+    },
+    {
+      "id": "TH-005",
+      "stride": "InformationDisclosure",
+      "title": "Publicly Accessible Database",
+      "description": "The 'main' database instance is publicly accessible, which could allow an attacker to access sensitive data.",
+      "resource_id": "aws_db_instance.main",
+      "severity": "critical",
+      "attack": [
+        {
+          "technique_id": "T1530",
+          "technique_name": "Data from Cloud Storage",
+          "tactic": "Collection",
+          "url": "https://attack.mitre.org/techniques/T1530/"
+        }
+      ],
+      "mitigations": [
+        {
+          "csf_function": "PR",
+          "csf_subcategory": "PR.DS-01",
+          "recommendation": "Update the database instance to restrict access to authorized users",
+          "terraform_hint": "Update the 'main' database instance to set the publicly_accessible attribute to false"
+        }
+      ]
+    }
+  ],
+  "remediation_pr": null,
+  "usage": {
+    "input_tokens": 2835,
+    "output_tokens": 903
+  }
+}

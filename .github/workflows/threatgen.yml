@@ -1,0 +1,39 @@
+# Example consumer workflow: run IaC ThreatGen on pull requests that touch IaC.
+# Copy this into a repo that uses the action (replace `./` with `owner/iac-threatgen@v1`
+# once published).
+name: Threat model
+
+on:
+  pull_request:
+    paths:
+      - "**.tf"
+      - "**.yaml"
+      - "**.yml"
+
+permissions:
+  contents: write        # least privilege: only what the PR agent needs
+  pull-requests: write
+
+jobs:
+  threatgen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run IaC ThreatGen
+        uses: ./                       # local action (this repo)
+        with:
+          path: "."
+          remediate: "false"           # set "true" to also generate + validate Terraform
+          open-pr: "false"             # set "true" to open a remediation PR
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: threat-report
+          path: |
+            threat_report.json
+            threat_report.md
