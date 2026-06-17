@@ -30,6 +30,9 @@ out/
 /threat_report.md
 .cache/
 
+# --- Local learning notes (not part of the project deliverable) ---
+PROJECT_NOTES.md
+
 # --- IDE / OS ---
 .vscode/
 .idea/
